@@ -123,8 +123,8 @@ demographics<-dplyr::bind_cols(
 )|>dplyr::mutate(age=as.integer(age))
 demographics
 
-rm(att_keys, sc_keys, dem_keys, belief_keys, lst)
-rm(f,id,out_dir,files,gv,lst,`%||%`,firebase_collection,firebase_config)
+rm(att_keys, sc_keys, dem_keys, belief_keys)
+rm(f,id,out_dir,files,gv,`%||%`,firebase_collection,firebase_config)
 
 data <- list(
   meta |> dplyr::select(id,startTime,completionTimestamp,submittedAt,duration),
