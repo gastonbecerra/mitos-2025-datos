@@ -64,7 +64,7 @@ data<-tibble::tibble(
   completionTimestamp=lubridate::ymd_hms(sapply(f,\(x)gv(x$completionTimestamp)),tz="UTC"),
   submittedAt=lubridate::ymd_hms(sapply(f,\(x)gv(x$submittedAt)),tz="UTC"),
   duration=as.numeric(difftime(completionTimestamp,startTime,units="secs"))
-)|>
+  )|>
   dplyr::bind_cols(
     pull_keys(f,att_keys)|>dplyr::mutate(dplyr::across(dplyr::everything(),as.integer)),
     pull_keys(f,belief_keys)|>dplyr::mutate(dplyr::across(dplyr::everything(),as.integer)),
@@ -90,5 +90,9 @@ data<-tibble::tibble(
   dplyr::relocate(id,.before=1)
 
 rm(files,lst,f,att_keys,belief_keys,sc_keys,pull_keys,gv)
+rm(firebase_config, firebase_collection, id, out_dir)
 
 glimpse(data)
+
+data %>% count(optionsCount)
+data %>% count(country)
