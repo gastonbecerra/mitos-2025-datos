@@ -563,24 +563,6 @@ esc |>
   theme_minimal(base_size = 12)
 
 
-## escenarios salientes o primarios --------------
-
-esc |>
-  count(item, optionsCount, answer) |>
-  group_by(item, optionsCount) |>
-  mutate(pct = 100 * n / sum(n)) |>
-  ggplot(aes(x = item, y = pct, fill = answer)) +
-  geom_col(position = "fill") +
-  facet_wrap(~ optionsCount) +
-  scale_y_continuous(labels = scales::percent_format()) +
-  labs(
-    x = "Escenario",
-    y = "% dentro del escenario",
-    fill = "Respuesta",
-    title = "Distribución de respuestas por escenario y condición"
-  ) +
-  theme_minimal(base_size = 12)
-
 esc |>
   count(optionsCount, answer) |>
   group_by(optionsCount) |>
@@ -598,18 +580,68 @@ ggplot(esc, aes(x = answer, fill = optionsCount)) +
   ) +
   theme_minimal(base_size = 12)
 
+
+## escenarios salientes o primarios --------------
+
+etiquetas <- tibble::tibble(
+  item = c("E1","E2","E3","E4","E7","E8","E9","E10","E11","E12","E13","E14"),
+  texto = c(
+    "E1 Decisión en tema controversial",
+    "E2 Analizar argumentos en discusión",
+    "E3 Responder consulta experta (legal/médica)",
+    "E4 Preguntas generales de cultura",
+    "E5 Ayuda en crisis emocional",
+    "E6 Hablar de sentimientos",
+    "E7 Sugerencia para responder a mi pareja",
+    "E8 Charlar sobre temas cotidianos",
+    "E9 Diseñar investigación científica",
+    "E10 Redactar resultados de investigación",
+    "E11 Enseñar nuevos conocimientos",
+    "E12 Elaborar contenidos educativos"
+  )
+)
+
 esc |>
   count(item, optionsCount, answer) |>
   group_by(item, optionsCount) |>
   mutate(pct = 100 * n / sum(n)) |>
   ungroup() |>
-  ggplot(aes(x = optionsCount, y = pct, fill = answer)) +
-  geom_col() +
-  facet_wrap(~ item, ncol = 4) +
-  scale_y_continuous(labels = function(x) paste0(x, "%"), limits = c(0, 100)) +
-  labs(x = NULL, y = "% dentro de la condición", fill = "Respuesta",
-       title = "Por escenario: dos barras (2 vs 3 opciones) con distribución human/ia/both") +
+  left_join(etiquetas, by = "item") |>
+  ggplot(aes(x = texto, y = pct, fill = answer)) +
+  geom_col(position = "fill") +
+  coord_flip() +
+  facet_wrap(~ optionsCount) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    x = "Escenario",
+    y = "% dentro del escenario",
+    fill = "Respuesta",
+    title = "Distribución de respuestas por escenario y condición"
+  ) +
   theme_minimal(base_size = 12)
+
+
+
+
+## t-test ---------------
+
+
+esc_prop <- esc |>
+  group_by(id, optionsCount) |>
+  summarise(
+    prop_ia   = mean(answer == "ia", na.rm = TRUE),
+    prop_hum  = mean(answer == "human", na.rm = TRUE),
+    prop_both = mean(answer == "both", na.rm = TRUE),
+    .groups = "drop"
+  )
+
+t.test(prop_ia ~ optionsCount, data = esc_prop, var.equal = TRUE)
+t.test(prop_both ~ optionsCount, data = esc_prop, var.equal = TRUE)
+
+
+# 👉 El valor del análisis no está en “demostrar que cambia”, sino en cuantificar cuánto se reacomoda la preferencia hacia la categoría intermedia (both) y de dónde proviene ese desplazamiento (como analizaste recién).
+# Así que sí: el t-test es redundante si lo interpretás de manera puramente descriptiva;
+# su interés sería más conceptual, por ejemplo, si quisieras mostrar que el cambio no es trivial o que el tamaño del desplazamiento (d) es grande.
 
 
 
@@ -617,31 +649,7 @@ esc |>
 
 # ¿El ingreso de la opción “both” redistribuye las respuestas equitativamente desde human e IA, o erosiona principalmente una de ellas?
 
-dif <- esc |>
-  count(item, optionsCount, answer) |>
-  group_by(item, optionsCount) |>
-  mutate(pct = 100 * n / sum(n)) |>
-  select(item, optionsCount, answer, pct) |>
-  pivot_wider(names_from = optionsCount, values_from = pct, names_prefix = "opc_") |>
-  mutate(diff = opc_3 - opc_2)
-
-dif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-esc |>
+esc_plot <- esc |>
   count(item, optionsCount, answer) |>
   group_by(item, optionsCount) |>
   mutate(pct = 100 * n / sum(n)) |>
@@ -649,7 +657,10 @@ esc |>
   tidyr::pivot_wider(names_from = optionsCount, values_from = pct, names_prefix = "opc_") |>
   mutate(diff = opc_3 - opc_2) |>
   filter(answer %in% c("human", "ia")) |>
-  ggplot(aes(x = reorder(item, diff), y = diff, fill = answer)) +
+  left_join(etiquetas, by = "item")
+
+esc_plot |>
+  ggplot(aes(x = reorder(texto, diff), y = diff, fill = answer)) +
   geom_col(position = "dodge") +
   geom_hline(yintercept = 0, linetype = "dashed") +
   coord_flip() +
@@ -661,10 +672,62 @@ esc |>
   ) +
   theme_minimal(base_size = 12)
 
-#2do: chequear!
-#Cuando el diff es negativo → la categoría pierde votos al introducir both.
-#Si “human” cae mucho y “IA” poco (como en E1), both reemplaza principalmente a human.
-#Si ambos caen de forma parecida (como en E11), both se reparte más equitativamente.
+dif <- esc |>
+  count(item, optionsCount, answer) |>
+  group_by(item, optionsCount) |>
+  mutate(pct = 100 * n / sum(n)) |>
+  select(item, optionsCount, answer, pct) |>
+  pivot_wider(names_from = optionsCount, values_from = pct, names_prefix = "opc_") |>
+  mutate(diff = opc_3 - opc_2)
+
+dif
+
+esc_plot |>
+  select(item, answer, diff, texto) |>
+  tidyr::pivot_wider(names_from = answer, values_from = diff) |>
+  mutate(
+    diff_abs = abs(human - ia),
+    main_source = case_when(
+      abs(human) > abs(ia) ~ "mostly_from_human",
+      abs(ia) > abs(human) ~ "mostly_from_ia",
+      TRUE ~ "balanced"
+    )
+  ) |>
+  ggplot(aes(x = reorder(texto, diff_abs), y = diff_abs, fill = main_source)) +
+  geom_col(alpha = 0.8) +
+  coord_flip() +
+  labs(
+    x = "Escenario",
+    y = "Diferencia absoluta entre caídas (%)",
+    fill = "Origen principal del cambio",
+    title = "¿De dónde provienen las respuestas 'both'?"
+  ) +
+  theme_minimal(base_size = 12)
+# guarda con este grafico! porque estos cambios % tambien dependen de cual era el % original... obvio que toma del que tiene mas. o no?
+
+esc_plot |>
+  select(item, answer, diff, texto, opc_2 = opc_2) |>  # agregar el % base
+  tidyr::pivot_wider(names_from = answer, values_from = c(diff, opc_2)) |>
+  mutate(
+    rel_human = diff_human / opc_2_human,
+    rel_ia = diff_ia / opc_2_ia,
+    rel_abs = abs(rel_human - rel_ia),
+    main_source = case_when(
+      abs(rel_human) > abs(rel_ia) ~ "mostly_from_human",
+      abs(rel_ia) > abs(rel_human) ~ "mostly_from_ia",
+      TRUE ~ "balanced"
+    )
+  ) |>
+  ggplot(aes(x = reorder(texto, rel_abs), y = rel_abs, fill = main_source)) +
+  geom_col(alpha = 0.8) +
+  coord_flip() +
+  labs(
+    x = "Escenario",
+    y = "Diferencia relativa entre caídas (proporcional al nivel base)",
+    fill = "Origen principal del cambio",
+    title = "¿De qué fuente proporcional provienen las respuestas 'both'?"
+  ) +
+  theme_minimal(base_size = 12)
 
 esc |>
   count(item, optionsCount, answer) |>
@@ -685,7 +748,6 @@ esc |>
     )
   ) |>
   arrange(desc(diff_abs))
-
 
 esc |>
   count(item, optionsCount, answer) |>
@@ -716,6 +778,86 @@ esc |>
   ) +
   theme_minimal(base_size = 12)
 
+base <- esc |>
+  count(item, optionsCount, answer) |>
+  group_by(item, optionsCount) |>
+  mutate(pct = 100 * n / sum(n)) |>
+  ungroup()
+
+abs_rel <- base |>
+  filter(answer %in% c("human","ia")) |>
+  select(item, answer, optionsCount, pct) |>
+  pivot_wider(names_from = optionsCount, values_from = pct, names_prefix = "opc_") |>
+  mutate(diff = opc_3 - opc_2,
+         rel = if_else(opc_2 > 0, diff/opc_2, NA_real_)) |>
+  select(item, answer, diff, rel) |>
+  pivot_wider(names_from = answer, values_from = c(diff, rel))
+
+abs_rel |>
+  mutate(diff_abs = abs(diff_human - diff_ia),
+         main_source = case_when(
+           abs(diff_human) > abs(diff_ia) ~ "mostly_from_human",
+           abs(diff_ia) > abs(diff_human) ~ "mostly_from_ia",
+           TRUE ~ "balanced"
+         )) |>
+  ggplot(aes(x = reorder(item, diff_abs), y = diff_abs, fill = main_source)) +
+  geom_col(alpha = 0.8) + coord_flip() +
+  labs(x = "Escenario", y = "Δ absoluto de caídas (pp)",
+       fill = "Origen", title = "Magnitud absoluta de la redistribución") +
+  theme_minimal(base_size = 12)
+
+abs_rel |>
+  mutate(rel_abs = abs(rel_human - rel_ia),
+         main_source = case_when(
+           abs(rel_human) > abs(rel_ia) ~ "mostly_from_human",
+           abs(rel_ia) > abs(rel_human) ~ "mostly_from_ia",
+           TRUE ~ "balanced"
+         )) |>
+  ggplot(aes(x = reorder(item, rel_abs), y = rel_abs, fill = main_source)) +
+  geom_col(alpha = 0.8) + coord_flip() +
+  labs(x = "Escenario", y = "Δ relativo de caídas",
+       fill = "Origen", title = "Redistribución proporcional (controlando nivel base)") +
+  theme_minimal(base_size = 12)
+
+share_bias <- base |>
+  complete(item, optionsCount, answer, fill = list(n = 0, pct = 0)) |>
+  select(item, optionsCount, answer, pct) |>
+  unite("cond_ans", optionsCount, answer, sep = "_") |>
+  pivot_wider(names_from = cond_ans, values_from = pct, values_fill = 0) |>
+  transmute(
+    item,
+    d_h = `3_human` - `2_human`,
+    d_i = `3_ia`    - `2_ia`,
+    d_b = `3_both`  - `2_both`,
+    share_obs = if_else(d_b > 0, (-d_h)/d_b, NA_real_),
+    share_exp = `2_human` / (`2_human` + `2_ia`),
+    bias = share_obs - share_exp
+  )
+
+share_bias |>
+  arrange(desc(abs(bias)))
+
+
+# uno mas clasico
+esc |>
+  count(item, optionsCount, answer) |>
+  group_by(item, optionsCount) |>
+  mutate(pct = 100 * n / sum(n)) |>
+  pivot_wider(names_from = optionsCount, values_from = pct) |>
+  mutate(diff = `3` - `2`) |>
+  ggplot(aes(x = item, y = diff, fill = answer)) +
+  geom_col(position = "dodge") +
+  geom_hline(yintercept = 0, color = "gray40", linetype = "dashed") +
+  labs(
+    x = "Escenario",
+    y = "Diferencia en puntos porcentuales (3 - 2)",
+    fill = "Respuesta",
+    title = "Cambio en las respuestas al introducir la opción intermedia"
+  ) +
+  theme_minimal(base_size = 12)
+
+
+
 
 
 #2do: comparar distinguiendo escenarios fuertes y de tareas soft
@@ -741,44 +883,18 @@ esc |>
 
 
 
+mapa <- tibble::tibble(
+  item = c("E1","E2","E3","E4","E7","E8","E9","E10","E11","E12","E13","E14"),
+  creencia = c("C1","C1","C2","C2","C3","C3","C4","C4","C5","C5","C6","C6"),
+  complejidad = c("compleja","simple","compleja","simple","compleja","simple",
+                  "compleja","simple","compleja","simple","compleja","simple")
+)
 
-
-## t-test o modelo lineal ---------------
-
-t.test(pref_ia ~ optionsCount, data = respuestas)
-# o bien
-lm(pref_ia ~ optionsCount + (1|id) + (1|item))  # con lmer, si querés controlar sujeto/escenario
-
-
-
-
-
-
-
-
-
-
-## modelos mixtos ???
-
-
-
-
-
-
-
-esc |>
-  count(item, optionsCount, answer) |>
-  group_by(item, optionsCount) |>
+resumen <- esc |>
+  left_join(mapa, by = "item") |>
+  count(creencia, complejidad, optionsCount, answer, name = "n") |>
+  group_by(creencia, complejidad, optionsCount) |>
   mutate(pct = 100 * n / sum(n)) |>
-  pivot_wider(names_from = optionsCount, values_from = pct) |>
-  mutate(diff = `3` - `2`) |>
-  ggplot(aes(x = item, y = diff, fill = answer)) +
-  geom_col(position = "dodge") +
-  geom_hline(yintercept = 0, color = "gray40", linetype = "dashed") +
-  labs(
-    x = "Escenario",
-    y = "Diferencia en puntos porcentuales (3 - 2)",
-    fill = "Respuesta",
-    title = "Cambio en las respuestas al introducir la opción intermedia"
-  ) +
-  theme_minimal(base_size = 12)
+  ungroup()
+
+resumen
