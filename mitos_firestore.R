@@ -96,3 +96,13 @@ glimpse(data)
 
 data %>% count(optionsCount)
 data %>% count(country)
+
+
+
+
+glimpse(data)
+data$scenarios[1] %>% glimpse()
+data$scenarios[2] %>% glimpse()
+data$scenarios[3] %>% glimpse()
+
+data %>% saveRDS('data.rds')

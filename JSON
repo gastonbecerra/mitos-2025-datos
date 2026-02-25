@@ -1,0 +1,35 @@
+
+
+{
+  "attitudes": [
+    {"id": "A1", "text": "Considero que la inteligencia artificial mejorará mi vida."},
+    {"id": "A2", "text": "Considero que la inteligencia artificial mejorará mi trabajo o mis estudios."},
+    {"id": "A3", "text": "Considero que utilizaré tecnologías de inteligencia artificial en el futuro."},
+    {"id": "A4", "text": "Considero que la inteligencia artificial es positiva para la humanidad."},
+    {"id": "A5", "text": "Considero que la inteligencia artificial es una amenaza para los seres humanos."}
+  ],
+
+  "beliefs": [
+    {"id": "C1", "text": "Creo que la IA puede tomar decisiones justas y objetivas."},
+    {"id": "C2", "text": "Creo que la IA puede dar respuestas certeras y sin prejuicios a mis preguntas."},
+    {"id": "C3", "text": "Creo que la IA puede ofrecer orientación y atención psicológica."},
+    {"id": "C4", "text": "Creo que la IA puede brindar compañía y apoyo emocional."},
+    {"id": "C5", "text": "Creo que la IA puede hacer investigación científica."},
+    {"id": "C6", "text": "Creo que la IA puede enseñar y guiar el aprendizaje."}
+  ],
+
+  "scenarios": [
+    {"id": "E1", "text": "Para tomar una decisión en un tema controversial o en una disputa ...", "belief_id": "C1"},
+    {"id": "E2", "text": "Para analizar los argumentos de cada parte en una discusión, y señalar inconsistencias ...", "belief_id": "C1"},
+    {"id": "E3", "text": "Para responder una consulta experta, como por ejemplo, legales o médicas ...", "belief_id": "C2"},
+    {"id": "E4", "text": "Para obtener respuestas a preguntas generales de cultura o información cotidiana ...", "belief_id": "C2"},
+    {"id": "E7", "text": "Para recibir ayuda en una crisis emocional o psicológica ...", "belief_id": "C3"},
+    {"id": "E8", "text": "Para hablar de mis sentimientos y pensamientos ...", "belief_id": "C3"},
+    {"id": "E9", "text": "Para recibir una sugerencia sobre cómo responder a un mensaje de mi pareja ...", "belief_id": "C4"},
+    {"id": "E10", "text": "Para charlar sobre temas cotidianos ...", "belief_id": "C4"},
+    {"id": "E11", "text": "Para diseñar y planificar una investigación científica ...", "belief_id": "C5"},
+    {"id": "E12", "text": "Para redactar y corregir los resultados de una investigación ...", "belief_id": "C5"},
+    {"id": "E13", "text": "Para enseñar nuevos conocimientos ...", "belief_id": "C6"},
+    {"id": "E14", "text": "Para elaborar contenidos y ejercicios educativos ...", "belief_id": "C6"}
+  ]
+}

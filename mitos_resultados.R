@@ -5,7 +5,22 @@ library(forcats)
 library(factoextra)
 library(broom)
 library(FactoMineR)
+library(showtext)
+font_add_google("Poppins", "poppins")
+showtext_auto()
 
+
+
+tema_ia <- theme_minimal(base_size = 20, base_family = "poppins") +
+  theme(
+    legend.position = "none",
+    plot.title = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(),
+    axis.ticks.y = element_blank()
+  )
+
+data <- readRDS(file = 'data/data.rds')
 glimpse(data)
 
 
@@ -32,13 +47,13 @@ data2 <- data |>
     actitud = rowMeans(across(c(A1:A4, A5r)), na.rm = TRUE)
   )
 
-glimpse(data2)
 
 boxplot(data$duration)
 boxplot(data2$duration)
 boxplot(data$age)
 boxplot(data2$age)
 
+glimpse(data2)
 data2 |>
   count(gender, sort = TRUE) |>
   mutate(pct = 100 * n / sum(n)) |>
@@ -195,15 +210,25 @@ glimpse(data2)
 summary(data2$actitud)
 
 ggplot(data2, aes(x = actitud)) +
-  geom_histogram(binwidth = 0.2, fill = "#4B9CD3", color = "white", alpha = 0.8) +
+  geom_histogram(binwidth = 0.2, fill = "#823dee", color = "white", alpha = 0.8) +
   geom_vline(aes(xintercept = mean(actitud, na.rm = TRUE)),
-             color = "red", linewidth = 0.8, linetype = "dashed") +
-  labs(
-    x = "Actitud hacia la IA (1–5)",
-    y = "Frecuencia",
-    title = "Distribución de la actitud hacia la IA"
-  ) +
-  theme_minimal(base_size = 12)
+             color = "#00ffde", linewidth = 0.8, linetype = "dashed") +
+  scale_x_continuous(limits = c(1, 5), breaks = 1:5) +
+  tema_ia
+
+ggplot(data2, aes(x = actitud)) +
+  geom_histogram(binwidth = 0.2, fill = "#823dee", color = "white", alpha = 0.8) +
+  geom_vline(aes(xintercept = mean(actitud, na.rm = TRUE)),
+             color = "#00ffde", linewidth = 0.8, linetype = "dashed") +
+  theme_minimal(base_size = 12) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    plot.title = element_blank(),
+    legend.position = "none"
+  )
 
 data2 <- data2 |>
   mutate(
@@ -256,6 +281,7 @@ list(
   workArea = broom::tidy(aov_work),
   uso_ia = broom::tidy(aov_ia)
 )
+
 #2do: no estoy leyendo estos datos o si?
 rm(aov_edu, aov_ia, aov_gender, aov_work)
 
@@ -280,6 +306,23 @@ ggplot(data2, aes(x = uso_ia_frecuencia, y = actitud, fill = uso_ia_frecuencia))
   labs(x = NULL, y = "Actitud hacia la IA (1–5)", title = "Actitud por frecuencia de uso de IA") +
   theme_minimal(base_size = 12) +
   theme(legend.position = "none")
+
+
+
+
+
+ggplot(data2, aes(x = reorder(workArea, actitud, median), y = actitud)) +
+  geom_boxplot(fill = "#823dee", color = "black", alpha = 0.8, outlier.color = "#00ffde") +
+  coord_flip() +
+  scale_y_continuous(limits = c(1, 5), breaks = 1:5) +
+  tema_ia
+
+
+ggplot(data2, aes(x = uso_ia_frecuencia, y = actitud)) +
+  geom_boxplot(fill = "#823dee", color = "black", alpha = 0.8, outlier.color = "#00ffde") +
+  scale_y_continuous(limits = c(1, 5), breaks = 1:5) +
+  tema_ia
+
 
 
 
@@ -432,15 +475,22 @@ psych::fa.diagram(pca)
 fa3 <- psych::fa(creencias, nfactors = 3, rotate = "oblimin")
 psych::fa.diagram(fa3)
 
+# 1 Tomar decisiones justas
+# 2 Dar respuestas certeras
+# 3 Ofrecer orientación psicológica
+# 4 Brindar compañía
+# 5 Hacer investigación
+# 6 Enseñar y guiar el aprendizaje
+
 etiquetas_creencias <- tibble::tibble(
   item = c("C1","C2","C3","C4","C5","C6"),
   texto = c(
-    "Creo que la IA puede tomar decisiones justas y objetivas",
-    "Creo que la IA puede dar respuestas certeras y sin prejuicios a mis preguntas",
-    "Creo que la IA puede ofrecer orientación y atención psicológica",
-    "Creo que la IA puede brindar compañía y apoyo emocional",
-    "Creo que la IA puede hacer investigación científica",
-    "Creo que la IA puede enseñar y guiar el aprendizaje"
+    "Tomar decisiones justas",
+    "Dar respuestas certeras",
+    "Ofrecer orientación psicológica",
+    "Brindar compañía",
+    "Hacer investigación",
+    "Enseñar y guiar el aprendizaje"
   )
 )
 
@@ -452,13 +502,28 @@ data2 |>
   dplyr::left_join(etiquetas_creencias, by = "item") |>
   ggplot2::ggplot(ggplot2::aes(x = reorder(texto, media), y = media)) +
   ggplot2::geom_col(fill = "#4B9CD3", alpha = 0.8) +
-  geom_errorbar(aes(ymin = media - sd/10, ymax = media + sd/10), width = 0.1) +
+  # geom_errorbar(aes(ymin = media - sd/10, ymax = media + sd/10), width = 0.1) +
   ggplot2::geom_text(ggplot2::aes(label = round(media, 2)), hjust = -0.3, size = 3) +
   ggplot2::coord_flip() +
   ggplot2::scale_y_continuous(limits = c(0,5)) +
   ggplot2::labs(x = NULL, y = "Promedio de acuerdo (1–5)",
                 title = "Nivel de acuerdo con distintas creencias sobre la IA") +
-  ggplot2::theme_minimal(base_size = 12)
+  ggplot2::theme_minimal(base_size = 15)
+
+data2 |>
+  tidyr::pivot_longer(C1:C6, names_to = "item", values_to = "valor") |>
+  dplyr::group_by(item) |>
+  dplyr::summarise(media = mean(valor, na.rm = TRUE)) |>
+  dplyr::left_join(etiquetas_creencias, by = "item") |>
+  ggplot(aes(x = reorder(texto, media))) +
+  geom_rect(aes(ymin = 1, ymax = media, xmin = as.numeric(reorder(texto, media)) - 0.4,
+                xmax = as.numeric(reorder(texto, media)) + 0.4),
+            fill = "#823dee", alpha = 0.9) +
+  geom_hline(yintercept = 3.685, linetype = "dashed", linewidth = 1, color = "#00ffde") +
+  scale_y_continuous(limits = c(1, 5), breaks = 1:5, expand = c(0, 0)) +
+  coord_flip() +
+  tema_ia
+
 
 # SD variabilidad similar, ninguna está completamente polarizada ni totalmente consensuada
 
@@ -473,6 +538,35 @@ data2 |>
   ggplot2::labs(x = "Respuesta Likert (1–5)", y = "Frecuencia",
                 title = "Distribución de respuestas por creencia") +
   ggplot2::theme_minimal(base_size = 12)
+
+data2 |>
+  tidyr::pivot_longer(C1:C6, names_to = "item", values_to = "valor") |>
+  dplyr::filter(item %in% c("C1","C6","C5"), dplyr::between(valor, 1, 5)) |>
+  dplyr::mutate(texto = dplyr::recode(item,
+                                      C1 = "Decisiones justas",
+                                      C6 = "Enseñar",
+                                      C5 = "Investigar"
+  )) |>
+  ggplot2::ggplot(ggplot2::aes(x = valor)) +
+  ggplot2::geom_histogram(binwidth = 1, boundary = 0.5, fill = "#823dee", alpha = 0.9) +
+  ggplot2::scale_x_continuous(breaks = 1:5, limits = c(1, 5)) +
+  ggplot2::facet_wrap(~ texto, ncol = 3) +
+  tema_ia
+
+data2 |>
+  tidyr::pivot_longer(C1:C6, names_to="item", values_to="valor") |>
+  # dplyr::filter(item %in% c("C1","C6","C5"), dplyr::between(valor,1,5)) |>
+  dplyr::mutate(texto=dplyr::recode(item, C1="Decisiones justas", C6="Enseñar", C5="Investigar")) |>
+  ggplot2::ggplot(ggplot2::aes(x=factor(valor, levels=1:5))) +
+  ggplot2::geom_bar(fill="#823dee", alpha=.9) +
+  ggplot2::facet_wrap(~texto, ncol=3) +
+  ggplot2::labs(x=NULL, y=NULL) +
+  tema_ia
+
+
+
+
+
 
 data2 |>
   tidyr::pivot_longer(C1:C6, names_to = "item", values_to = "valor") |>
@@ -526,6 +620,8 @@ labs_items <- c(
   C5="IA hace investigación",
   C6="IA enseña y guía"
 )
+
+
 
 data2 |>
   pivot_longer(C1:C6, names_to="item", values_to="valor") |>
@@ -610,6 +706,28 @@ esc |>
   ) +
   theme_minimal(base_size = 12)
 
+esc |>
+  count(optionsCount, answer) |>
+  group_by(optionsCount) |>
+  mutate(optionsCount = if_else(optionsCount == 2, "H/IA", "H/IA/Ambos")) %>%
+  mutate(pct = n / sum(n)) |>
+  ggplot(aes(x = optionsCount, y = pct, fill = answer)) +
+  geom_col(alpha = 0.9, width = 0.7) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_fill_manual(
+    values = c("human" = "#823dee", "ia" = "#00ffde", "both" = "#a89bff"),
+    name = element_blank(),
+    labels = c("Humano", "IA", "Ambos")
+  ) +
+  tema_ia +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 15)
+  )
+
+
+
 
 ## escenarios salientes o primarios --------------
 
@@ -632,18 +750,18 @@ esc |>
 etiquetas <- tibble::tibble(
   item = c("E1","E2","E3","E4","E7","E8","E9","E10","E11","E12","E13","E14"),
   texto = c(
-    "E1 Decisión en tema controversial",
+    "Decisión controversial",
     "E2 Analizar argumentos en discusión",
-    "E3 Responder consulta experta (legal/médica)",
+    "Consulta experta",
     "E4 Preguntas generales de cultura",
-    "E7 Ayuda en crisis emocional",
-    "E8 Hablar de sentimientos",
-    "E9 Sugerencia para responder a mi pareja",
+    "Ayuda en crisis emocional",
+    "Hablar de sentimientos",
+    "Sugerencia msj pareja",
     "E10 Charlar sobre temas cotidianos",
     "E11 Diseñar investigación científica",
-    "E12 Redactar resultados de investigación",
-    "E13 Enseñar nuevos conocimientos",
-    "E14 Elaborar contenidos educativos"
+    "Redacción académica",
+    "Enseñar conocimientos",
+    "Elaborar material educ."
   )
 )
 
@@ -652,7 +770,8 @@ esc |>
   count(optionsCount, answer)
 
 esc |>
-  # filter(item=="E9") |>
+  filter(item %in% c("E9", "E7", "E14", "E13", "E12", "E9", "E3", "E1", "E8") ) |>
+  mutate(optionsCount = if_else(optionsCount == 2, "H/IA", "H/IA/Ambos")) %>%
   count(item, optionsCount, answer) |>
   group_by(item, optionsCount) |>
   mutate(pct = 100 * n / sum(n)) |>
@@ -662,14 +781,20 @@ esc |>
   geom_col(position = "fill") +
   coord_flip() +
   facet_wrap(~ optionsCount) +
-  scale_y_continuous(labels = scales::percent_format()) +
-  labs(
-    x = "Escenario",
-    y = "% dentro del escenario",
-    fill = "Respuesta",
-    title = "Distribución de respuestas por escenario y condición"
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_fill_manual(
+    values = c("human" = "#823dee", "ia" = "#00ffde", "both" = "#a89bff"),
+    name = element_blank(),
+    labels = c("Humano", "IA", "Ambos")
   ) +
-  theme_minimal(base_size = 20)
+  tema_ia +
+  theme(
+    base_size = 12,
+    legend.position = "bottom",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 15)
+  )
+
 
 
 
@@ -795,6 +920,19 @@ esc_prop |>
   theme_minimal(base_size = 14) +
   theme(legend.position = "none")
 
+esc_prop |>
+  ggplot(aes(x = optionsCount, y = prop_ia, fill = optionsCount)) +
+  geom_boxplot(alpha = 0.7, width = 0.5, outlier.shape = NA) +
+  geom_jitter(width = 0.1, alpha = 0.3) +
+  stat_summary(fun = mean, geom = "point", shape = 21, size = 3, fill = "white") +
+  labs(
+    x = "Condición experimental",
+    y = "Proporción de respuestas 'IA'",
+    title = "Comparación de proporciones 'IA' según cantidad de opciones"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none")
+
 
 esc_prop |>
   group_by(optionsCount) |>
@@ -877,3 +1015,20 @@ esc |>
   scale_y_continuous(labels = scales::percent_format()) +
   theme_minimal(base_size = 20) +
   facet_wrap(~complejidad)
+
+
+
+
+# confianza (creencia) -> delegacion ---------------------------------
+
+# Unidad: tarea × condición
+# Variables:
+# confianza_media_tarea
+# delegacion_IA
+# delegacion_Ambos
+# delegacion_total_IA = IA + Ambos
+
+# Modelo recomendado:
+# regresión lineal o logística:
+# delegacion_total_IA ~ confianza + condicion + confianza × condicion
+# Esto responde: ¿la complementariedad aumenta la delegación incluso controlando por confianza?
