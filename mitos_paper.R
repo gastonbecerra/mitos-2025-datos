@@ -17,6 +17,16 @@ tema_ia <- theme_minimal(base_size = 20) +
     axis.ticks.y = element_blank()
   )
 
+
+tema_apa <- theme_classic(base_size = 12, base_family = "sans") +
+  theme(
+    legend.position = "none",
+    axis.line.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(color = "black")
+  )
+
 data <- readRDS(file = 'data/data.rds')
 glimpse(data)
 
@@ -74,52 +84,143 @@ data2 |>
 # actitud general ---------------------
 
 glimpse(data2)
-summary(data2$actitud)
+# summary(data2$actitud)
 summary(data2$actitud4)
 
+m <- mean(data2$actitud4, na.rm = TRUE)
 
-ggplot(data2, aes(x = reorder(workArea, actitud4, median), y = actitud4, fill = workArea)) +
-  geom_violin(scale = "count", trim = FALSE, alpha = 0.7) +
-  stat_summary(fun = median, geom = "point", color = "white") +
+data2 |>
+  dplyr::filter(!is.na(actitud4), between(actitud4, 1, 5)) |>
+  ggplot(aes(x = actitud4)) +
+  geom_histogram(
+    binwidth = 0.25,
+    boundary = 1,
+    fill = "grey75",
+    color = "black",
+    linewidth = 0.3
+  ) +
+  geom_vline(
+    xintercept = m,
+    linetype = "dashed",
+    linewidth = 0.6,
+    color = "black"
+  ) +
+  scale_x_continuous(
+    limits = c(1, 5),
+    breaks = 1:5,
+    expand = c(0, 0)
+  ) +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  apa
+
+## grafico 1
+
+items_likert <- data2 |>
+  dplyr::select(A1, A2, A3, A4) |>
+  dplyr::rename(
+    "La IA me resulta positiva" = A1,
+    "Me interesa aprender a usar IA" = A2,
+    "La IA puede ser útil en mi vida cotidiana" = A3,
+    "La IA puede mejorar mi trabajo o estudio" = A4
+  ) |>
+  tidyr::pivot_longer(
+    cols = dplyr::everything(),
+    names_to = "item",
+    values_to = "respuesta"
+  ) |>
+  dplyr::filter(!is.na(respuesta)) |>
+  dplyr::mutate(
+    respuesta = factor(
+      respuesta,
+      levels = 1:5,
+      labels = c(
+        "Muy en desacuerdo",
+        "En desacuerdo",
+        "Neutral",
+        "De acuerdo",
+        "Muy de acuerdo"
+      )
+    )
+  ) |>
+  dplyr::count(item, respuesta) |>
+  dplyr::group_by(item) |>
+  dplyr::mutate(p = n / sum(n)) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    item = factor(item, levels = rev(unique(item)))
+  )
+
+ggplot(items_likert, aes(x = item, y = p, fill = respuesta)) +
+  geom_col(color = "black", linewidth = 0.2, width = 0.7) +
   coord_flip() +
-  scale_x_discrete(labels = function(x) {
-    n <- as.integer(table(data2$workArea)[x]); paste0(x, " (n=", n, ")")
-  }) +
-  labs(x = NULL, y = "Actitud (1–5)", title = "Actitud por área de trabajo (violín ∝ n)") +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "none")
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 1),
+    expand = c(0, 0)
+  ) +
+  scale_fill_grey(start = 0.9, end = 0.35) +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  apa
 
-ggplot(data2, aes(x = actitud4)) +
-  geom_histogram(binwidth = 0.25, fill = "#823dee", color = "white", alpha = 0.8) +
-  geom_vline(aes(xintercept = mean(actitud4, na.rm = TRUE)),
-             color = "#00ffde", linewidth = 0.8, linetype = "dashed") +
-  scale_x_continuous(limits = c(1, 5), breaks = 1:5) +
-  tema_ia
+## grafico 2
 
+tabla_n <- table(data2$workArea)
 
+ggplot(
+  data2 |> dplyr::filter(!is.na(workArea), !is.na(actitud4)),
+  aes(x = reorder(workArea, actitud4, median, na.rm = TRUE), y = actitud4)
+) +
+  geom_boxplot(
+    width = 0.6,
+    fill = "grey80",
+    color = "black",
+    outlier.shape = 1,
+    outlier.size = 1.5
+  ) +
+  coord_flip() +
+  scale_x_discrete(
+    labels = \(x) paste0(x, " (n=", as.integer(tabla_n[x]), ")")
+  ) +
+  scale_y_continuous(
+    limits = c(1, 5),
+    breaks = 1:5
+  ) +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  tema_apa
 
-ggplot(data2, aes(x = gender, y = actitud4, fill = gender)) +
-  geom_boxplot(alpha = 0.8) +
-  labs(x = NULL, y = "Actitud hacia la IA (1–5)", title = "Actitud por género") +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "none")
-ggplot(data2, aes(x = education, y = actitud4, fill = education)) +
-  geom_boxplot(alpha = 0.8) +
-  labs(x = NULL, y = "Actitud hacia la IA (1–5)", title = "Actitud por nivel educativo") +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "none")
-ggplot(data2, aes(x = uso_ia_frecuencia, y = actitud4, fill = uso_ia_frecuencia)) +
-  geom_boxplot(alpha = 0.8) +
-  labs(x = NULL, y = "Actitud hacia la IA (1–5)", title = "Actitud por frecuencia de uso de IA") +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "none")
+## grafico 3
 
-glimpse(data2)
+ggplot(
+  data2 |> dplyr::filter(!is.na(uso_ia_frecuencia), !is.na(actitud4)),
+  aes(x = uso_ia_frecuencia, y = actitud4)
+) +
+  geom_boxplot(
+    width = 0.6,
+    fill = "grey80",
+    color = "black",
+    outlier.shape = 1,
+    outlier.size = 1.5
+  ) +
+  scale_y_continuous(
+    limits = c(1, 5),
+    breaks = 1:5
+  ) +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  tema_apa
 
-data2 %>%
-  select(-scenarios,-A5r,-actitud,-actitud4,-actitud5,-startTime,-completionTimestamp,-submittedAt, -duration) %>%
-  write.csv(file = 'actitudes.csv')
-
+data2$uso_ia_frecuencia %>% table()
+## grafico 4
 
 
 
@@ -127,73 +228,106 @@ data2 %>%
 
 creencias <- data2 |> dplyr::select(C1:C6)
 
+# etiquetas_creencias <- tibble::tibble(
+#   item = c("C1","C2","C3","C4","C5","C6"),
+#   texto = c(
+#     "C1 OBJETIVIDAD Tomar decisiones justas ",
+#     "C2 EXPERTICIA Dar respuestas certeras",
+#     "C3 PSICOLOGIA Ofrecer orientación psicológica",
+#     "C4 COMPANIA Brindar compañía",
+#     "C5 CIENCIA Hacer investigación",
+#     "C6 ENSENAR Enseñar y guiar el aprendizaje"
+#   )
+# )
+
 etiquetas_creencias <- tibble::tibble(
   item = c("C1","C2","C3","C4","C5","C6"),
   texto = c(
-    "C1 OBJETIVIDAD Tomar decisiones justas ",
-    "C2 EXPERTICIA Dar respuestas certeras",
-    "C3 PSICOLOGIA Ofrecer orientación psicológica",
-    "C4 COMPANIA Brindar compañía",
-    "C5 CIENCIA Hacer investigación",
-    "C6 ENSENAR Enseñar y guiar el aprendizaje"
+    "Tomar decisiones justas ",
+    "Dar respuestas certeras",
+    "Ofrecer orientación psicológica",
+    "Brindar compañía",
+    "Hacer investigación científica",
+    "Enseñar y guiar el aprendizaje"
   )
 )
 
-data2 |>
-  tidyr::pivot_longer(C1:C6, names_to = "item", values_to = "valor") |>
-  dplyr::group_by(item) |>
-  dplyr::summarise(media = mean(valor, na.rm = TRUE),
-                   sd = sd(valor, na.rm = TRUE)) |>
-  dplyr::left_join(etiquetas_creencias, by = "item") |>
-  ggplot2::ggplot(ggplot2::aes(x = reorder(texto, media), y = media)) +
-  ggplot2::geom_col(fill = "#4B9CD3", alpha = 0.8) +
-  ggplot2::geom_hline(yintercept = mean(data2$actitud4), color = "red") +
-  # geom_errorbar(aes(ymin = media - sd/10, ymax = media + sd/10), width = 0.1) +
-  ggplot2::geom_text(ggplot2::aes(label = round(media, 2)), hjust = -0.3, size = 3) +
-  ggplot2::coord_flip() +
-  ggplot2::scale_y_continuous(limits = c(0,5)) +
-  ggplot2::labs(x = NULL, y = "Promedio de acuerdo (1–5)",
-                title = "Nivel de acuerdo con distintas creencias sobre la IA") +
-  ggplot2::theme_minimal(base_size = 15)
+media_actitud <- mean(data2$actitud4, na.rm = TRUE)
+
+ggplot(creencias_plot, aes(x = reorder(texto, media), y = media)) +
+  geom_segment(
+    aes(xend = reorder(texto, media), y = 1, yend = media),
+    linewidth = 0.6,
+    color = "black"
+  ) +
+  geom_point(
+    size = 3,
+    shape = 21,
+    fill = "grey70",
+    color = "black"
+  ) +
+  geom_hline(
+    yintercept = media_actitud,
+    linetype = "dashed",
+    linewidth = 0.5,
+    color = "black"
+  ) +
+  annotate(
+    "text",
+    x = 1.1,
+    y = media_actitud + 0.05,
+    label = paste0("Media actitud general = ", round(media_actitud, 2)),
+    hjust = 0,
+    size = 3.2,
+    family = "sans"
+  ) +
+  geom_text(
+    aes(label = round(media, 2)),
+    hjust = -0.2,
+    size = 3.5,
+    family = "sans"
+  ) +
+  coord_flip() +
+  scale_y_continuous(
+    limits = c(1, 5),
+    breaks = 1:5,
+    expand = expansion(mult = c(0, 0.05))
+  ) +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  tema_apa
+
+## grafico 5
+
 
 data2 |>
   tidyr::pivot_longer(C1:C6, names_to = "item", values_to = "valor") |>
   dplyr::filter(dplyr::between(valor, 1, 5)) |>
   dplyr::left_join(etiquetas_creencias, by = "item") |>
-  ggplot2::ggplot(ggplot2::aes(x = valor)) +
-  ggplot2::geom_histogram(binwidth = 1, boundary = 0.5, fill = "#4B9CD3", alpha = 0.8) +
-  ggplot2::scale_x_continuous(breaks = 1:5) +
-  ggplot2::facet_wrap(~ texto, ncol = 3) +
-  ggplot2::labs(x = "Respuesta Likert (1–5)", y = "Frecuencia",
-                title = "Distribución de respuestas por creencia") +
-  ggplot2::theme_minimal(base_size = 12)
+  dplyr::mutate(valor = factor(valor, levels = 1:5)) |>
+  ggplot(aes(x = valor)) +
+  geom_bar(
+    fill = "grey80",
+    color = "black",
+    linewidth = 0.3
+  ) +
+  facet_wrap(~ texto, ncol = 3) +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  tema_apa +
+  theme(
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.4),
+    strip.background = element_blank(),
+    strip.text = element_text(color = "black"),
+    panel.spacing = unit(1, "lines")
+  )
 
-data2 |>
-  tidyr::pivot_longer(C1:C6, names_to = "item", values_to = "valor") |>
-  dplyr::left_join(etiquetas_creencias, by = "item") |>
-  dplyr::group_by(texto) |>
-  dplyr::summarise(
-    n = dplyr::n(),
-    media = round(mean(valor, na.rm = TRUE), 2),
-    sd = round(sd(valor, na.rm = TRUE), 2),
-    min = min(valor, na.rm = TRUE),
-    max = max(valor, na.rm = TRUE)
-  ) |>
-  dplyr::arrange(desc(media))
+## grafico 6
 
-data2 |>
-  tidyr::pivot_longer(C1:C6, names_to = "item", values_to = "valor") |>
-  dplyr::left_join(etiquetas_creencias, by = "item") |>
-  dplyr::group_by(texto) |>
-  dplyr::summarise(
-    n = dplyr::n(),
-    media = round(mean(valor, na.rm = TRUE), 2),
-    sd = round(sd(valor, na.rm = TRUE), 2),
-    min = min(valor, na.rm = TRUE),
-    max = max(valor, na.rm = TRUE)
-  ) |>
-  dplyr::arrange(desc(media)) |>
-  pull(media) |> mean()
 
 
 
@@ -218,14 +352,21 @@ table(esc$item)
 esc |>
   count(optionsCount, answer) |>
   group_by(optionsCount) |>
-  mutate(optionsCount = if_else(optionsCount == 2, "H/IA", "H/IA/Ambos")) %>%
-  mutate(pct = n / sum(n)) |>
+  mutate(
+    optionsCount = if_else(optionsCount == 2, "H/IA", "H/IA/Ambos"),
+    pct = n / sum(n)
+  ) |>
   ggplot(aes(x = optionsCount, y = pct, fill = answer)) +
   geom_col(alpha = 0.9, width = 0.7) +
+  geom_text(
+    aes(label = scales::percent(pct, accuracy = 1)),
+    position = position_stack(vjust = 0.5),
+    color = "white",
+    size = 4
+  ) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
   scale_fill_manual(
     values = c("human" = "#823dee", "ia" = "#00ffde", "both" = "#a89bff"),
-    name = element_blank(),
     labels = c("Humano", "IA", "Ambos")
   ) +
   tema_ia +
@@ -234,57 +375,72 @@ esc |>
     legend.title = element_text(size = 10),
     legend.text = element_text(size = 15)
   )
+
+esc |>
+  count(optionsCount, answer) |>
+  group_by(optionsCount) |>
+  mutate(
+    optionsCount = if_else(optionsCount == 2, "H/IA", "H/IA/Ambos"),
+    pct = n / sum(n),
+    answer = factor(answer, levels = c("human", "ia", "both"))
+  ) |>
+  ggplot(aes(x = optionsCount, y = pct, fill = answer)) +
+  geom_col(
+    width = 0.6,
+    color = "black",
+    linewidth = 0.3
+  ) +
+  geom_text(
+    aes(label = scales::percent(pct, accuracy = 1)),
+    position = position_stack(vjust = 0.5),
+    color = "black",
+    size = 3.5,
+    family = "sans"
+  ) +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 1),
+    limits = c(0, 1),
+    expand = c(0, 0)
+  ) +
+  scale_fill_manual(
+    values = c(
+      "human" = "grey85",
+      "ia" = "grey55",
+      "both" = "grey70"
+    ),
+    breaks = c("human", "ia", "both"),
+    labels = c("Humano", "IA", "Ambos")
+  ) +
+  labs(
+    x = NULL,
+    y = NULL,
+    fill = NULL
+  ) +
+  tema_apa +
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(color = "black")
+  )
+
+## grafico 7
 
 etiquetas <- tibble::tibble(
   item = c("E1","E2","E3","E4","E7","E8","E9","E10","E11","E12","E13","E14"),
   texto = c(
-    "C1 E1 Decisión controversial",
-    "C1 E2 Analizar argumentos en discusión",
-    "C2 E3 Consulta experta",
-    "C2 E4 Preguntas generales de cultura",
-    "C3 E7 Ayuda en crisis emocional",
-    "C3 E8 Hablar de sentimientos",
-    "C4 E9 Sugerencia msj pareja",
-    "C4 E10 Charlar sobre temas cotidianos",
-    "C5 E11 Diseñar investigación científica",
-    "C5 E12 Redacción académica",
-    "C6 E13 Enseñar conocimientos",
-    "C6 E14 Elaborar material educ."
+    "Decisión controversial",
+    "Analizar argumentos en discusión",
+    "Consulta experta",
+    "Preguntas generales de cultura",
+    "Ayuda en crisis emocional",
+    "Hablar de sentimientos",
+    "Sugerencia msj pareja",
+    "Charlar sobre temas cotidianos",
+    "Diseñar investigación científica",
+    "Redacción académica",
+    "Enseñar conocimientos",
+    "Elaborar material educ."
   )
 )
-
-esc |>
-  filter(optionsCount == 3) |>
-  mutate(optionsCount = if_else(optionsCount == 2, "H/IA", "H/IA/Ambos")) |>
-  count(item, optionsCount, answer) |>
-  group_by(item, optionsCount) |>
-  mutate(p = n / sum(n)) |>
-  ungroup() |>
-  left_join(etiquetas, by = "item") |>
-  ggplot(aes(x = texto, y = p, fill = answer)) +
-  geom_col() +
-  geom_text(
-    aes(label = scales::percent(p, accuracy = 1)),
-    position = position_stack(vjust = 0.5),
-    size = 3,
-    color = "white"
-  ) +
-  coord_flip() +
-  facet_wrap(~ optionsCount) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  scale_fill_manual(
-    values = c("human" = "#823dee", "ia" = "#00ffde", "both" = "#a89bff"),
-    name = element_blank(),
-    labels = c("Humano", "IA", "Ambos")
-  ) +
-  tema_ia +
-  theme(
-    base_size = 12,
-    legend.position = "bottom",
-    legend.title = element_text(size = 10),
-    legend.text = element_text(size = 15)
-  )
-
 
 esc |>
   mutate(optionsCount = if_else(optionsCount == 2, "H/IA", "H/IA/Ambos")) |>
@@ -321,121 +477,50 @@ esc |>
 
 
 
-
-
-
-
-
 esc |>
-  filter(optionsCount==3) |>
-  filter(answer!="both") |>
-  count(item,answer) |>
-  group_by(item) |>
-  summarize(n_2opciones = sum(n))
-
-
-esc |>
-  filter(optionsCount==3) |>
-  filter(answer!="both") |>
-  count(item,answer)
-
-
-
-
-esc |>
-  dplyr::filter(answer %in% c("human","ia")) |>
-  dplyr::count(item, optionsCount, answer, name = "n") |>
-  tidyr::pivot_wider(
-    id_cols = c(item, optionsCount),
-    names_from = answer,
-    values_from = n,
-    values_fill = 0
+  mutate(optionsCount = if_else(optionsCount == 2, "H/IA", "H/IA/Ambos")) |>
+  count(item, optionsCount, answer) |>
+  group_by(item, optionsCount) |>
+  mutate(p = n / sum(n)) |>
+  ungroup() |>
+  left_join(etiquetas, by = "item") |>
+  mutate(
+    answer = factor(answer, levels = c("human", "ia", "both")),
+    optionsCount = factor(optionsCount, levels = c("H/IA", "H/IA/Ambos")),
+    texto = factor(texto, levels = rev(etiquetas$texto))
   ) |>
-  dplyr::mutate(
-    total = human + ia,
-    pct_h = human / total,
-    pct_ia = ia / total
-  ) |>
-  dplyr::select(item, optionsCount, human, ia, pct_h, pct_ia) |>
-  tidyr::pivot_wider(
-    id_cols = item,
-    names_from = optionsCount,
-    values_from = c(human, ia, pct_h, pct_ia),
-    names_glue = "{.value}_{optionsCount}"
-  ) |> dplyr::mutate(
-  delta_ia = pct_ia_2 - pct_ia_3
-)
-
-
-
-esc |>
-  dplyr::filter(optionsCount == 3) |>
-  dplyr::filter(answer %in% c("human", "ia")) |>
-  dplyr::count(item, answer) |>
-  dplyr::group_by(item) |>
-  dplyr::mutate(pct = n / sum(n)) |>
-  dplyr::ungroup() |>
-  dplyr::select(-n) |>
-  tidyr::pivot_wider(
-    id_cols = item,
-    names_from = answer,
-    values_from = pct
-  )
-
-
-
-esc |>
-  dplyr::filter(optionsCount == 3) |>
-  dplyr::filter(answer %in% c("human", "ia")) |>
-  dplyr::count(item, answer, name = "n") |>
-  dplyr::group_by(item) |>
-  dplyr::mutate(pct = n / sum(n)) |>
-  dplyr::ungroup() |>
-  tidyr::pivot_wider(
-    id_cols = item,
-    names_from = answer,
-    values_from = c(n, pct),
-    names_glue = "{.value}_{answer}"
-  )
-
-
-
-comp_puros <- esc |>
-  dplyr::filter(answer %in% c("human", "ia")) |>
-  dplyr::count(item, optionsCount, answer, name = "n") |>
-  dplyr::group_by(item, optionsCount) |>
-  dplyr::mutate(pct = n / sum(n)) |>
-  dplyr::ungroup() |>
-  dplyr::mutate(
-    optionsCount = dplyr::case_when(
-      optionsCount == 2 ~ "H/IA",
-      optionsCount == 3 ~ "H/IA/Ambos\n(sin Both)"
-    )
-  )
-
-comp_puros |>
-  dplyr::left_join(etiquetas, by = "item") |>
-  ggplot2::ggplot(ggplot2::aes(x = texto, y = pct, fill = answer)) +
-  ggplot2::geom_col() +
-  ggplot2::geom_text(
-    ggplot2::aes(label = scales::percent(pct, accuracy = 1)),
-    position = ggplot2::position_stack(vjust = 0.5),
-    size = 3,
-    color = "white"
+  ggplot(aes(x = texto, y = p, fill = answer)) +
+  geom_col(
+    width = 0.7,
+    color = "black",
+    linewidth = 0.3
   ) +
-  ggplot2::coord_flip() +
-  ggplot2::facet_wrap(~ optionsCount) +
-  ggplot2::scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  ggplot2::scale_fill_manual(
-    values = c("human" = "#823dee", "ia" = "#00ffde"),
-    labels = c("Humano", "IA"),
+  geom_text(
+    aes(label = scales::percent(p, accuracy = 1)),
+    position = position_stack(vjust = 0.5),
+    size = 3,
+    color = "black",
+    family = "sans"
+  ) +
+  coord_flip() +
+  facet_wrap(~ optionsCount) +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 1),
+    limits = c(0, 1),
+    expand = c(0, 0)
+  ) +
+  scale_fill_manual(
+    values = c("human" = "grey85", "ia" = "grey55", "both" = "grey70"),
+    labels = c("Humano", "IA", "Ambos"),
     name = NULL
   ) +
-  tema_ia +
-  ggplot2::theme(
-    legend.position = "bottom",
-    legend.text = ggplot2::element_text(size = 15)
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  tema_apa +
+  theme(
+    legend.position = "bottom"
   )
 
-
-
+## grafico 8
