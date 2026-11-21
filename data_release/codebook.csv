@@ -1,0 +1,25 @@
+dataset,variable,type,description,values_or_range
+actitudes.csv,id,character,Pseudonymous response identifier,
+actitudes.csv,A1,integer,AIAS-4 attitude item 1,1–5 Likert scale
+actitudes.csv,A2,integer,AIAS-4 attitude item 2,1–5 Likert scale
+actitudes.csv,A3,integer,AIAS-4 attitude item 3,1–5 Likert scale
+actitudes.csv,A4,integer,AIAS-4 attitude item 4,1–5 Likert scale
+actitudes.csv,A5,integer,Additional AI attitude item not included in the AIAS-4 score,1–5 Likert scale
+actitudes.csv,C1,integer,CREEAI-6 belief item 1,1–5 Likert scale
+actitudes.csv,C2,integer,CREEAI-6 belief item 2,1–5 Likert scale
+actitudes.csv,C3,integer,CREEAI-6 belief item 3,1–5 Likert scale
+actitudes.csv,C4,integer,CREEAI-6 belief item 4,1–5 Likert scale
+actitudes.csv,C5,integer,CREEAI-6 belief item 5,1–5 Likert scale
+actitudes.csv,C6,integer,CREEAI-6 belief item 6,1–5 Likert scale
+actitudes.csv,country,character,Country of residence or origin as recorded in the survey,
+actitudes.csv,uso_ia_frecuencia,character,Self-reported AI-use frequency,"nunca; esporadicamente; ocasional; frecuente"
+actitudes.csv,studyArea,character,Area of study,
+actitudes.csv,education,character,Educational level,
+actitudes.csv,workArea,character,Area of work,
+actitudes.csv,gender,character,Gender category as recorded in the survey,
+actitudes.csv,age,integer,Age in years,
+actitudes.csv,optionsCount,integer,Number of response options in the experimental condition,"2; 3"
+preferences.csv,id,character,Pseudonymous response identifier,
+preferences.csv,optionsCount,integer,Number of response options in the experimental condition,"2; 3"
+preferences.csv,scenario,character,Scenario code,"E1; E2; E3; E4; E7; E8; E9; E10; E11; E12; E13; E14"
+preferences.csv,answer,character,Preferred response option,"human; ia; both"
