@@ -2,7 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
-*.env
-/data/
-Rplots.pdf
 *.rds
+*.env
+/data/*
+!/data/
+!/data/data.rds
+Rplots.pdf
